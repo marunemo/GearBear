@@ -33,15 +33,10 @@ class _LoginPageState extends State<LoginPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 로고 이미지
-            // CircleAvatar(
-            //   radius: 50,
-            //   backgroundColor: Colors.grey[200],
-            //   child: 
-            // ),
             Image.asset(
               'assets/images/GearBear.png',
-              width: 80,
-              height: 80,
+              width: 160,
+              height: 160,
             ),
             const SizedBox(height: 16),
             
