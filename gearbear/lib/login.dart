@@ -19,6 +19,11 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  confirmLogin() {
+    // TODO: 로그인 로직 구현
+    Navigator.pushReplacementNamed(context, '/menu');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,14 +33,15 @@ class _LoginPageState extends State<LoginPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 로고 이미지
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.grey[200],
-              child: Image.asset(
-                'assets/images/bear_logo.png',
-                width: 80,
-                height: 80,
-              ),
+            // CircleAvatar(
+            //   radius: 50,
+            //   backgroundColor: Colors.grey[200],
+            //   child: 
+            // ),
+            Image.asset(
+              'assets/images/GearBear.png',
+              width: 80,
+              height: 80,
             ),
             const SizedBox(height: 16),
             
@@ -91,10 +97,7 @@ class _LoginPageState extends State<LoginPage> {
             
             // 로그인 버튼
             ElevatedButton(
-              onPressed: () {
-                // TODO: 로그인 로직 구현
-                Navigator.pushReplacementNamed(context, '/menu');
-              },
+              onPressed: confirmLogin,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 minimumSize: const Size(double.infinity, 50),

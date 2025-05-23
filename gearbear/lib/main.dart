@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'firebase_options.dart'; // Firebase CLI로 생성한 설정 파일
 
 import 'login.dart';
 import 'menu.dart';
