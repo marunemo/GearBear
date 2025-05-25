@@ -63,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
               width: 160,
               height: 160,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             
             // 앱 이름
             const Text(
@@ -73,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
             
             // 이메일 입력 필드
             TextField(
@@ -113,8 +113,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 35),
+            
+            // 구글 로그인
             GoogleSignInButton(onPressed: signInWithGoogle),
             
             // 로그인 버튼
