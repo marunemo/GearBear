@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -18,6 +20,29 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     super.dispose();
   }
+
+  Future<void> signInWithGoogle() async {
+    // Google 로그인 창 표시
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+    if (googleUser == null) return; // 로그인 취소 시
+
+    // 인증 정보 획득
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    // Firebase에 로그인
+    await FirebaseAuth.instance.signInWithCredential(credential);
+
+    // 화면이 도중에 바뀌었는지 확인
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/menu');
+  }
+
 
   confirmLogin() {
     // TODO: 로그인 로직 구현
@@ -89,6 +114,8 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 24),
+
+            GoogleSignInButton(onPressed: signInWithGoogle),
             
             // 로그인 버튼
             ElevatedButton(
@@ -124,6 +151,53 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Text('Sign Up'),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GoogleSignInButton extends StatelessWidget {
+  const GoogleSignInButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 250,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: const Color.fromRGBO(158, 158, 158, 0.3),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.login,
+              weight: 24
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Sign in with Google',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
