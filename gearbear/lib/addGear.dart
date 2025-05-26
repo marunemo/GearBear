@@ -14,10 +14,11 @@ class AddGearPage extends StatefulWidget {
 }
 
 class _AddGearPageState extends State<AddGearPage> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _weightController = TextEditingController();
-  final _qtyController = TextEditingController();
   final _manufacturerController = TextEditingController();
+  final _qtyController = TextEditingController();
   String _selectedType = 'Tent';
   File? _imageFile;
 
@@ -35,8 +36,8 @@ class _AddGearPageState extends State<AddGearPage> {
   void dispose() {
     _nameController.dispose();
     _weightController.dispose();
-    _qtyController.dispose();
     _manufacturerController.dispose();
+    _qtyController.dispose();
     super.dispose();
   }
   
@@ -52,6 +53,11 @@ class _AddGearPageState extends State<AddGearPage> {
         actions: [
           TextButton(
             onPressed: () async {
+              if (!_formKey.currentState!.validate()) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Saving.... Please Wait')),
+              );
+
               final uid = FirebaseAuth.instance.currentUser?.uid;
               if (uid == null) return;
 
@@ -66,6 +72,7 @@ class _AddGearPageState extends State<AddGearPage> {
                 imageUrl = await ref.getDownloadURL();
               }
 
+              final parsedQty = int.tryParse(_qtyController.text.trim());
               final gear = Gear(
                 uid: uid,
                 gid: gid,
@@ -73,7 +80,7 @@ class _AddGearPageState extends State<AddGearPage> {
                 manufacturer: _manufacturerController.text.trim(),
                 type: _selectedType,
                 weight: int.tryParse(_weightController.text.trim()) ?? 0,
-                quantity: int.tryParse(_qtyController.text.trim()) ?? 0,
+                quantity: (parsedQty != null ? parsedQty.clamp(1, 1000) : 1),
                 imgUrl: imageUrl,
               );
 
@@ -91,142 +98,162 @@ class _AddGearPageState extends State<AddGearPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 이미지 업로드 영역
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 이미지 업로드 영역
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: double.infinity,
+                      height: 240,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: _imageFile == null
+                          ? const Center(
+                              child: Icon(
+                                Icons.add_a_photo,
+                                size: 60,
+                                color: Colors.grey,
+                              ),
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.file(
+                                _imageFile!,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                     ),
-                    child: _imageFile == null
-                        ? const Center(
-                            child: Icon(
-                              Icons.add_a_photo,
-                              size: 60,
-                              color: Colors.grey,
-                            ),
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.file(
-                              _imageFile!,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // 제조사 입력 필드
-              const Text('Manufacturer', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _manufacturerController,
-                decoration: InputDecoration(
-                  hintText: 'Ex) MSR',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                // 제조사 입력 필드
+                const Text('Manufacturer', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _manufacturerController,
+                  decoration: InputDecoration(
+                    hintText: 'Ex) MSR',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // 이름 입력 필드
-              const Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  hintText: 'Ex) Hubba Hubba',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () => _nameController.clear(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // 유형 선택 드롭다운
-              const Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButton<String>(
-                  value: _selectedType,
-                  isExpanded: true,
-                  underline: Container(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedType = newValue!;
-                    });
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a manufacturer';
+                    }
+                    return null;
                   },
-                  items: <String>[
-                    'Tent',
-                    'Sleeping Bag',
-                    'Matt',
-                    'BackPack',
-                    'Cook Set',
-                    'Clothes',
-                    'Electonics',
-                    'etc'
-                  ].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+                
+                // 이름 입력 필드
+                const Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    hintText: 'Ex) Hubba Hubba',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => _nameController.clear(),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // 유형 선택 드롭다운
+                const Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _selectedType,
+                    isExpanded: true,
+                    underline: Container(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedType = newValue!;
+                      });
+                    },
+                    items: <String>[
+                      'Tent',
+                      'Sleeping Bag',
+                      'Matt',
+                      'BackPack',
+                      'Cook Set',
+                      'Clothes',
+                      'Electonics',
+                      'etc'
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-              // 무게 입력 필드
-              const Text('Weight', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _weightController,
-                decoration: InputDecoration(
-                  hintText: '1160',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                // 무게 입력 필드
+                const Text('Weight', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _weightController,
+                  decoration: InputDecoration(
+                    hintText: 'Ex) 1160',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixText: 'g',
                   ),
-                  suffixText: 'g',
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a weight';
+                    }
+                    return null;
+                  },
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              
-              // 수량 입력 필드
-              const Text('QTY', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _qtyController,
-                decoration: InputDecoration(
-                  hintText: '1',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                
+                const SizedBox(height: 24),
+
+                const Text('QTY', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _qtyController,
+                  decoration: InputDecoration(
+                    hintText: '1',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
+                  keyboardType: TextInputType.number,
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              
-              const SizedBox(height: 24),
-              
-            ],
+                const SizedBox(height: 16),
+                
+              ],
+            ),
           ),
         ),
       ),
