@@ -232,7 +232,7 @@ class _GearListPageState extends State<GearListPage> {
           // Floating drawer
           if (_isDrawerOpen)
             Positioned(
-              top: 60,
+              top: 0,
               left: 10,
               child: Material(
                 elevation: 6,
@@ -248,13 +248,6 @@ class _GearListPageState extends State<GearListPage> {
                         title: const Text('Gear List'),
                         onTap: () {
                           // TODO: Navigate to Gear List
-                          _toggleDrawer();
-                        },
-                      ),
-                      ListTile(
-                        title: const Text('Add Gear'),
-                        onTap: () {
-                          Navigator.pushNamed(context, '/add_gear');
                           _toggleDrawer();
                         },
                       ),
