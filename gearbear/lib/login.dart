@@ -40,13 +40,13 @@ class _LoginPageState extends State<LoginPage> {
 
     // 화면이 도중에 바뀌었는지 확인
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/menu');
+    Navigator.pushReplacementNamed(context, '/');
   }
 
 
-  gotoMenu() {
-    Navigator.pushReplacementNamed(context, '/menu');
-  }
+gotoMenu() {
+  Navigator.pushReplacementNamed(context, '/');
+}
 
   @override
   Widget build(BuildContext context) {

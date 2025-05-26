@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         '/menu': (context) => const MenuPage(),
         '/pack_setting': (context) => const PackSettingPage(),
         '/statistics': (context) => const StatisticsPage(),
-        '/gear_list': (context) => const GearListPage(),
+        '/': (context) => const GearListPage(),
         '/add_gear': (context) => const AddGearPage(),
         '/subject_segmentation': (context) => const SubjectSegmentationPage(),
         '/profile': (context) => const ProfilePage(),

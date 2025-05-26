@@ -514,3 +514,5 @@ android/app/google-services.json
 .firebase/
 
 # End of https://www.toptal.com/developers/gitignore/api/firebase
+
+firebase_options.dart
