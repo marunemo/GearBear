@@ -24,6 +24,14 @@ class _GearListPageState extends State<GearListPage> {
     final gearStream = FirebaseFirestore.instance.collection('Gear').snapshots();
     
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/add_gear');
+        },
+        backgroundColor: Theme.of(context).primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+        tooltip: 'Add Gear',
+      ),
       body: Stack(
         children: [
           // Main content
