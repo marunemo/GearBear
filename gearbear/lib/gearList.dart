@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'model/gear.dart';
+import 'models/gear_model.dart';
 
 class GearListPage extends StatefulWidget {
   const GearListPage({Key? key}) : super(key: key);
@@ -124,7 +124,7 @@ class _GearListPageState extends State<GearListPage> {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        gear.type.name,
+                                        gear.type,
                                         style: const TextStyle(fontSize: 13),
                                       ),
                                       const SizedBox(width: 12),
