@@ -44,8 +44,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
 
-  confirmLogin() {
-    // TODO: 로그인 로직 구현
+  gotoMenu() {
     Navigator.pushReplacementNamed(context, '/menu');
   }
 
@@ -73,46 +72,6 @@ class _LoginPageState extends State<LoginPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 20),
-            
-            // 이메일 입력 필드
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: '이메일 또는 아이디',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => _emailController.clear(),
-                ),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            
-            // 비밀번호 입력 필드
-            TextField(
-              controller: _passwordController,
-              obscureText: !_isPasswordVisible,
-              decoration: InputDecoration(
-                labelText: '비밀번호',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordVisible = !_isPasswordVisible;
-                    });
-                  },
-                ),
-              ),
-            ),
             const SizedBox(height: 35),
             
             // 구글 로그인
@@ -120,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
             
             // 로그인 버튼
             ElevatedButton(
-              onPressed: confirmLogin,
+              onPressed: gotoMenu,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 minimumSize: const Size(double.infinity, 50),
@@ -129,29 +88,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               child: const Text(
-                'Login',
+                'Backdoor',
                 style: TextStyle(fontSize: 16, color: Colors.white),
               ),
-            ),
-            const SizedBox(height: 24),
-            
-            // 회원가입 및 ID/PW 찾기 버튼
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    // TODO: ID/PW 찾기 화면으로 이동
-                  },
-                  child: const Text('Find ID/PW'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // TODO: 회원가입 화면으로 이동
-                  },
-                  child: const Text('Sign Up'),
-                ),
-              ],
             ),
           ],
         ),
