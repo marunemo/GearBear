@@ -8,6 +8,8 @@ import 'gearList.dart';
 import 'addGear.dart';
 import 'subjectSegment.dart';
 import 'profile.dart';
+import 'editGear.dart';
+import 'models/gear_model.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -35,6 +37,15 @@ class MyApp extends StatelessWidget {
         '/add_gear': (context) => const AddGearPage(),
         '/subject_segmentation': (context) => const SubjectSegmentationPage(),
         '/profile': (context) => const ProfilePage(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/edit_gear') {
+          final gear = settings.arguments as Gear;
+          return MaterialPageRoute(
+            builder: (context) => EditGearPage(gear: gear),
+          );
+        }
+        return null;
       },
     );
   }

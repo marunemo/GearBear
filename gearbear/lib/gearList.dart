@@ -24,6 +24,13 @@ class _GearListPageState extends State<GearListPage> {
     final gearStream = FirebaseFirestore.instance.collection('Gear').snapshots();
     
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gear List'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: _toggleDrawer,
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/add_gear');
@@ -37,13 +44,6 @@ class _GearListPageState extends State<GearListPage> {
           // Main content
           Column(
             children: [
-              AppBar(
-                title: const Text('Gear List'),
-                leading: IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: _toggleDrawer,
-                ),
-              ),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: gearStream,
@@ -98,7 +98,7 @@ class _GearListPageState extends State<GearListPage> {
                           onDismissed: (direction) async {
                             try {
                               await FirebaseFirestore.instance
-                                  .collection('gear')
+                                  .collection('Gear')
                                   .doc(gear.gid)
                                   .delete();
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -216,7 +216,7 @@ class _GearListPageState extends State<GearListPage> {
                                 color: Colors.grey[400],
                               ),
                               onTap: () {
-                                // 상세 페이지 이동 등 원하는 동작 추가
+                                Navigator.pushNamed(context, '/edit_gear', arguments: gear);
                               },
                             ),
                           ),
