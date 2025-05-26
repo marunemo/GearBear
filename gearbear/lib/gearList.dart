@@ -21,7 +21,7 @@ class _GearListPageState extends State<GearListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final gearStream = FirebaseFirestore.instance.collection('gear').snapshots();
+    final gearStream = FirebaseFirestore.instance.collection('Gear').snapshots();
     
     return Scaffold(
       body: Stack(
