@@ -94,9 +94,13 @@ class _MyCampPageState extends State<MyCampPage> {
                 child: const Icon(Icons.delete, color: Colors.white),
               ),
               child: ListTile(
-                leading: gear.imgUrl.isNotEmpty
-                    ? Image.network(gear.imgUrl, width: 40, height: 40, fit: BoxFit.cover)
-                    : const Icon(Icons.image_not_supported),
+                leading: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: gear.imgUrl.isNotEmpty
+                      ? Image.network(gear.imgUrl, width: 40, height: 40, fit: BoxFit.cover)
+                      : const Icon(Icons.image_not_supported),
+                ),
                 title: Text(gear.gearName),
                 trailing: Text('${gear.weight} g'),
               ),
