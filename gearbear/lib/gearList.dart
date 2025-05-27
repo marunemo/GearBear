@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'models/gear_model.dart';
 
@@ -21,7 +22,11 @@ class _GearListPageState extends State<GearListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final gearStream = FirebaseFirestore.instance.collection('Gear').snapshots();
+    final user = FirebaseAuth.instance.currentUser;
+    final gearStream = FirebaseFirestore.instance
+      .collection('Gear')
+      .where('uid', isEqualTo: user?.uid)
+      .snapshots();
     
     return Scaffold(
       appBar: AppBar(

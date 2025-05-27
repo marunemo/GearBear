@@ -1,5 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+final categories = [
+  'Tent',
+  'Sleeping Bag',
+  'Matt',
+  'BackPack',
+  'Cook Set',
+  'Clothes',
+  'Electonics',
+  'etc'
+];
+
 class Gear {
   final String uid;
   final String gid;
