@@ -190,7 +190,7 @@ class _MyCampPageState extends State<MyCampPage> {
           IconButton(
             icon: Icon(Icons.bar_chart),
             onPressed: () {
-              // TODO: Navigate to chart page
+              Navigator.pushNamed(context, '/stat', arguments: _selectedCamp);
             },
           ),
         ],
