@@ -297,7 +297,7 @@ class _GearListPageState extends State<GearListPage> {
                       ListTile(
                         title: const Text('My Camp'),
                         onTap: () {
-                          // TODO: Navigate to Summarization
+                          Navigator.pushNamed(context, '/my_camp');
                           _toggleDrawer();
                         },
                       ),
