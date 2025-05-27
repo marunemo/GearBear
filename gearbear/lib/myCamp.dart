@@ -144,8 +144,10 @@ class _MyCampPageState extends State<MyCampPage> {
                           actions: [
                             TextButton(
                               onPressed: () async {
+                                final groupGids = availableGears.map((g) => g.gid).toSet();
+                                final currentGroupGids = currentGids.intersection(groupGids);
                                 final newGidsToAdd = selectedGids.difference(currentGids);
-                                final gidsToRemove = currentGids.difference(selectedGids);
+                                final gidsToRemove = currentGroupGids.difference(selectedGids);
                                 final campRef = FirebaseFirestore.instance.collection('Camp').doc(_selectedCamp!.cid);
                                 if (newGidsToAdd.isNotEmpty) {
                                   await campRef.update({
