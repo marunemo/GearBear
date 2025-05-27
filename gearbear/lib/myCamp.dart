@@ -24,7 +24,7 @@ class _MyCampPageState extends State<MyCampPage> {
     _fetchAllGears();
   }
 
-  void _fetchCamps() async {
+  Future<void> _fetchCamps() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -105,9 +105,12 @@ class _MyCampPageState extends State<MyCampPage> {
             ElevatedButton(
               onPressed: () {
                 final selectedGids = <String>{};
+                final currentGids = Set<String>.from(_selectedCamp?.gidList ?? []);
                 final availableGears = _allGears
                     .where((g) => g.uid == FirebaseAuth.instance.currentUser?.uid && typeFilter.contains(g.type))
                     .toList();
+
+                selectedGids.addAll(currentGids.where((gid) => availableGears.any((g) => g.gid == gid)));
 
                 showDialog(
                   context: context,
@@ -141,14 +144,30 @@ class _MyCampPageState extends State<MyCampPage> {
                           actions: [
                             TextButton(
                               onPressed: () async {
+                                final newGidsToAdd = selectedGids.difference(currentGids);
+                                final gidsToRemove = currentGids.difference(selectedGids);
                                 final campRef = FirebaseFirestore.instance.collection('Camp').doc(_selectedCamp!.cid);
-                                await campRef.update({
-                                  'gid_list': FieldValue.arrayUnion(selectedGids.toList())
-                                });
-                                _fetchCamps();
+                                if (newGidsToAdd.isNotEmpty) {
+                                  await campRef.update({
+                                    'gid_list': FieldValue.arrayUnion(newGidsToAdd.toList())
+                                  });
+                                }
+                                if (gidsToRemove.isNotEmpty) {
+                                  await campRef.update({
+                                    'gid_list': FieldValue.arrayRemove(gidsToRemove.toList())
+                                  });
+                                }
+
                                 Navigator.pop(context);
+                                final currentCid = _selectedCamp!.cid;
+                                await _fetchCamps();
+                                setState(() {
+                                  _selectedCamp = _myCamps.any((c) => c.cid == currentCid)
+                                      ? _myCamps.firstWhere((c) => c.cid == currentCid)
+                                      : (_myCamps.isNotEmpty ? _myCamps[0] : null);
+                                });
                               },
-                              child: const Text('Add!', style: TextStyle(color: Colors.deepPurple)),
+                              child: const Text('Complete', style: TextStyle(color: Colors.deepPurple)),
                             ),
                           ],
                         );
