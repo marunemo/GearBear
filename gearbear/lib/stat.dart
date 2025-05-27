@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'models/gear_model.dart';
+import 'models/camp_model.dart';
 
 class StatisticsPage extends StatelessWidget {
-  const StatisticsPage({Key? key}) : super(key: key);
+  final Camp camp;
+  
+  const StatisticsPage({
+    Key? key,
+    required this.camp,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -10,117 +19,182 @@ class StatisticsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Pack Weight'),
         leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            // TODO: 메뉴 드로어 열기
-          },
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_download),
-            onPressed: () {
-              // TODO: 데이터 다운로드 로직
-            },
-          ),
-        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // 파이 차트
-            SizedBox(
-              height: 220,
-              child: Stack(
-                children: [
-                  PieChart(
-                    PieChartData(
-                      sections: [
-                        PieChartSectionData(
-                          color: Colors.teal,
-                          value: 2.1,
-                          title: '',
-                          radius: 50,
-                        ),
-                        PieChartSectionData(
-                          color: Colors.red,
-                          value: 0.6,
-                          title: '',
-                          radius: 50,
-                        ),
-                        PieChartSectionData(
-                          color: Colors.blue,
-                          value: 0.2,
-                          title: '',
-                          radius: 50,
-                        ),
-                        PieChartSectionData(
-                          color: Colors.orange,
-                          value: 1.8,
-                          title: '',
-                          radius: 50,
-                        ),
-                      ],
-                      centerSpaceRadius: 70,
-                      sectionsSpace: 0,
-                    ),
-                  ),
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text(
-                          '2.6 kg',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return FutureBuilder<QuerySnapshot>(
+      future: _getGearFuture(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final gears = _parseGears(snapshot);
+        if (gears.isEmpty) {
+          return const Center(child: Text('No gear found'));
+        }
+
+        final chartData = _processChartData(gears);
+        return _buildChartUI(chartData);
+      },
+    );
+  }
+
+  Future<QuerySnapshot> _getGearFuture() async {
+    return FirebaseFirestore.instance
+        .collection('Gear')
+        .where('gid', whereIn: camp.gidList)
+        .get();
+  }
+
+  List<Gear> _parseGears(AsyncSnapshot<QuerySnapshot> snapshot) {
+    return snapshot.data!.docs
+        .map((doc) => Gear.fromFirestore(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  Map<String, double> _processChartData(List<Gear> gears) {
+    final categoryWeights = <String, double>{};
+    
+    for (final gear in gears) {
+      final totalWeight = gear.weight * gear.quantity;
+      categoryWeights.update(
+        gear.type,
+        (value) => value + totalWeight.toDouble(),
+        ifAbsent: () => totalWeight.toDouble(),  
+      );
+    }
+
+    return categoryWeights;
+  }
+
+  Widget _buildChartUI(Map<String, double> chartData) {
+    final totalWeight = chartData.values.fold<double>(0, (sum, w) => sum + w);
+    final chartSections = _buildChartSections(chartData);
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          _buildPieChart(chartSections, totalWeight),
+
+          const SizedBox(height: 30),
+          Text(
+            camp.campName,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 40),
-            
-            // 범례
-            _buildLegendItem('Big 4', Colors.blue, '1.6 kg'),
-            _buildLegendItem('Kitchen', Colors.orange, '0.6 kg'),
-            _buildLegendItem('Clothes', Colors.red, '0.2 kg'),
-            _buildLegendItem('ETC', Colors.teal, '0.2 kg'),
-          ],
-        ),
+          ),
+          const SizedBox(height: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  'Type',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Weight',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          ..._buildLegendItems(chartData),
+        ],
       ),
     );
   }
-  
+
+  Widget _buildPieChart(List<PieChartSectionData> sections, double total) {
+    return SizedBox(
+      height: 220,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
+            PieChartData(
+              sections: sections,
+              centerSpaceRadius: 70,
+              sectionsSpace: 0,
+            ),
+          ),
+          Center(
+            child: Text(
+              '${(total / 1000).toStringAsFixed(1)} kg',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<PieChartSectionData> _buildChartSections(Map<String, double> data) {
+    final colors = _getCategoryColors();
+    return data.entries.map((entry) {
+      return PieChartSectionData(
+        color: colors[entry.key] ?? Colors.grey,
+        value: entry.value,
+        title: '',
+        radius: 50,
+        showTitle: false,
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildLegendItems(Map<String, double> data) {
+    final colors = _getCategoryColors();
+    return data.entries.map((entry) {
+      return _buildLegendItem(
+        entry.key,
+        colors[entry.key] ?? Colors.grey,
+        '${(entry.value / 1000).toStringAsFixed(3)} kg',
+      );
+    }).toList();
+  }
+
   Widget _buildLegendItem(String title, Color color, String weight) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
+          Container(width: 16, height: 16, color: color),
           const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16),
-          ),
-          const Spacer(),
-          Text(
-            weight,
-            style: const TextStyle(fontSize: 16),
-          ),
+          Expanded(child: Text(title)),
+          Text(weight),
         ],
       ),
     );
+  }
+
+  Map<String, Color> _getCategoryColors() {
+    return {
+      'Tent': Colors.blue,
+      'Sleeping Bag': Colors.green,
+      'Matt': Colors.orange,
+      'BackPack': Colors.red,
+      'Cook Set': Colors.purple,
+      'Clothes': Colors.teal,
+      'Electonics': Colors.amber,
+      'etc': Colors.grey,
+    };
   }
 }

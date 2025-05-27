@@ -4,8 +4,11 @@ import 'login.dart';
 import 'gearList.dart';
 import 'addGear.dart';
 import 'editGear.dart';
-import 'models/gear_model.dart';
 import 'myCamp.dart';
+import 'stat.dart';
+
+import 'models/gear_model.dart';
+import 'models/camp_model.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -35,6 +38,12 @@ class MyApp extends StatelessWidget {
           final gear = settings.arguments as Gear;
           return MaterialPageRoute(
             builder: (context) => EditGearPage(gear: gear),
+          );
+        }
+        if (settings.name == '/stat') {
+          final camp = settings.arguments as Camp;
+          return MaterialPageRoute(
+            builder: (context) => StatisticsPage(camp: camp),
           );
         }
         return null;
