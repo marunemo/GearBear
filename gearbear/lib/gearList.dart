@@ -13,6 +13,24 @@ class GearListPage extends StatefulWidget {
 
 class _GearListPageState extends State<GearListPage> {
   bool _isDrawerOpen = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _toggleDrawer() {
     setState(() {
@@ -49,6 +67,19 @@ class _GearListPageState extends State<GearListPage> {
           // Main content
           Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'Search by gear name...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: gearStream,
@@ -62,7 +93,14 @@ class _GearListPageState extends State<GearListPage> {
                     }
                 
                     final docs = snapshot.data?.docs ?? [];
-                    final List<Gear> gearList = docs.map((doc) => Gear.fromFirestore(doc.data() as Map<String, dynamic>)).toList();
+                    final List<Gear> gearList = docs
+                        .map((doc) => Gear.fromFirestore(doc.data() as Map<String, dynamic>))
+                        .where((gear) {
+                          final query = _searchQuery.trim();
+                          final regex = RegExp('.*$query.*', caseSensitive: false);
+                          return regex.hasMatch(gear.gearName) || regex.hasMatch(gear.manufacturer);
+                        })
+                        .toList();
                 
                     if (gearList.isEmpty) {
                       return Center(child: Text('No gears added.'));
