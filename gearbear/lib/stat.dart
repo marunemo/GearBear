@@ -19,8 +19,8 @@ class StatisticsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Pack Weight'),
         leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: _buildBody(context),
@@ -52,7 +52,7 @@ class StatisticsPage extends StatelessWidget {
 
   Future<QuerySnapshot> _getGearFuture() async {
     return FirebaseFirestore.instance
-        .collection('gear')
+        .collection('Gear')
         .where('gid', whereIn: camp.gidList)
         .get();
   }
@@ -88,7 +88,32 @@ class StatisticsPage extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           _buildPieChart(chartSections, totalWeight),
+
+          const SizedBox(height: 30),
+          Text(
+            camp.campName,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  'Type',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Weight',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
           ..._buildLegendItems(chartData),
         ],
       ),
@@ -141,7 +166,7 @@ class StatisticsPage extends StatelessWidget {
       return _buildLegendItem(
         entry.key,
         colors[entry.key] ?? Colors.grey,
-        '${(entry.value / 1000).toStringAsFixed(1)} kg',
+        '${(entry.value / 1000).toStringAsFixed(3)} kg',
       );
     }).toList();
   }
