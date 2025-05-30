@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'models/gear_model.dart';
 
@@ -37,6 +38,16 @@ class _GearListPageState extends State<GearListPage> {
       _isDrawerOpen = !_isDrawerOpen;
     });
   }
+  
+  Future<void> signOut() async {
+    final GoogleSignIn googleSignIn = GoogleSignIn();
+
+    // Google 로그아웃
+    await googleSignIn.signOut();
+
+    // Firebase 로그아웃
+    await FirebaseAuth.instance.signOut();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +64,17 @@ class _GearListPageState extends State<GearListPage> {
           icon: const Icon(Icons.menu),
           onPressed: _toggleDrawer,
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await signOut();
+
+              // 로그아웃 후 로그인 페이지로 이동 (예: LoginPage)
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
