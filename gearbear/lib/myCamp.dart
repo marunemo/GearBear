@@ -329,7 +329,7 @@ class _MyCampPageState extends State<MyCampPage> {
                       ListTile(
                         title: const Text('Gear List'),
                         onTap: () {
-                          Navigator.pushNamed(context, '/gear_list');
+                          Navigator.pushNamed(context, '/');
                           _toggleDrawer();
                         },
                       ),
