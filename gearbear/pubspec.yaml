@@ -42,6 +42,7 @@ dependencies:
   fl_chart: ^1.0.0
   camera: ^0.11.1
   image_picker: ^1.0.7
+  firebase_ai: ^2.0.0
 
 dev_dependencies:
   flutter_test:
