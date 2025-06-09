@@ -6,11 +6,8 @@ import 'addGear.dart';
 import 'editGear.dart';
 import 'myCamp.dart';
 import 'stat.dart';
-<<<<<<< HEAD
 import 'gearDoctor.dart';
-=======
 import 'campMap.dart';
->>>>>>> a27f0399341775bbeaacf50116cc58f7d62e634a
 
 import 'models/gear_model.dart';
 import 'models/camp_model.dart';
