@@ -43,11 +43,11 @@ Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
   final response = await http.get(Uri.parse(url));
   if (response.statusCode == 200) {
     final data = json.decode(response.body);
-    // 대표 검색 결과 1~3개만 추출
+    // 대표 검색 결과 10개만 추출
     final items = data['items'] as List<dynamic>?;
     if (items != null && items.isNotEmpty) {
       return {
-        'results': items.take(3).map((item) => {
+        'results': items.take(10).map((item) => {
           'title': item['title'],
           'link': item['link'],
           'snippet': item['snippet'],
@@ -69,10 +69,10 @@ class GeminiService {
   GeminiService()
       : fetchCampToolByGoogleSearchTool = FunctionDeclaration(
           'fetchCampToolByGoogleSearch',
-          '구글 검색을 통해 캠프 도구 정보를 실시간으로 조회합니다.',
+          'Get real-time camp tool information via Google search',
           parameters: {
             'query': Schema.string(
-              description: '검색할 캠프 도구 이름 또는 관련 키워드 (예: 캠프 랜턴 추천)'
+              description: 'Camp tool name or related keyword to search for (e.g., camp lantern recommends)'
             ),
           },
         ),
@@ -82,10 +82,10 @@ class GeminiService {
             Tool.functionDeclarations([
               FunctionDeclaration(
                 'fetchCampToolByGoogleSearch',
-                '구글 검색을 통해 캠프 도구 정보를 실시간으로 조회합니다.',
+                'Get real-time camp tool information via Google search',
                 parameters: {
                   'query': Schema.string(
-                    description: '검색할 캠프 도구 이름 또는 관련 키워드 (예: 캠프 랜턴 추천)'
+                    description: 'Camp tool name or related keyword to search for (e.g., camp lantern recommends)'
                   ),
                 },
               ),
@@ -157,15 +157,16 @@ class GearDoctorPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Camping Gear Finder',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('🏕️ Gemini Gear Finder (No State-Management)'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gear Doctor'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
-        // 핵심 로직을 담고 있는 StatefulWidget을 body에 배치
-        body: const GearFinderWidget(),
       ),
+      // 핵심 로직을 담고 있는 StatefulWidget을 body에 배치
+      body: const GearFinderWidget(),
     );
   }
 }
@@ -211,7 +212,7 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = "검색 중 오류 발생: $e";
+        _errorMessage = "Error in search: $e";
         _searchResults = []; // 오류 발생 시 이전 결과 초기화
         _isLoading = false;
       });
@@ -244,13 +245,13 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${item.gearName}이(가) Firestore에 추가되었습니다.')),
+          SnackBar(content: Text('${item.gearName} is added.')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Firestore 저장 실패: $e')),
+          SnackBar(content: Text('Fail to add the gear: $e')),
         );
       }
     }
@@ -275,7 +276,7 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
                 child: TextField(
                   controller: _searchController,
                   decoration: const InputDecoration(
-                    hintText: '캠핑 장비 검색...',
+                    hintText: 'Searching gear...',
                     border: OutlineInputBorder(),
                   ),
                   // 키보드의 완료 버튼으로도 검색 실행
@@ -317,6 +318,14 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: ListTile(
+                    leading: item.imgUrl != null && item.imgUrl.isNotEmpty
+                        ? Image.network(
+                            item.imgUrl,
+                            width: 30,
+                            height: 30,
+                            fit: BoxFit.cover,
+                          )
+                        : const Icon(Icons.image_not_supported),
                     title: Text(item.gearName),
                     subtitle: Text('${item.manufacturer} / ${item.type} / ${item.weight}g'),
                     trailing: ElevatedButton(
@@ -331,49 +340,8 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
         // 검색 결과가 없을 때 (초기 상태 포함)
         else
           const Expanded(
-            child: Center(child: Text('검색어를 입력하고 검색 버튼을 누르세요.')),
+            child: Center(child: Text('Enter your search term and press the search button.')),
           ),
-
-        const Divider(),
-        const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text("내 캠핑 장비 목록 (from Firestore)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-        
-        // --- Firestore 데이터 표시 UI ---
-        Expanded(
-          // StreamBuilder를 사용하여 Firestore 'Gear' 컬렉션의 변경사항을 실시간으로 감지
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('Gear').orderBy('createdAt', descending: true).snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('데이터를 불러오지 못했습니다: ${snapshot.error}'));
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text('저장된 장비가 없습니다.'));
-              }
-
-              // Firestore 문서를 Gear 객체 리스트로 변환
-              final gears = snapshot.data!.docs.map((doc) => Gear.fromDocument(doc)).toList();
-
-              return ListView.builder(
-                itemCount: gears.length,
-                itemBuilder: (context, index) {
-                  final gear = gears[index];
-                  return ListTile(
-                    leading: CircleAvatar(child: Text(gear.type.isNotEmpty ? gear.type.substring(0, 1) : "E")),
-                    title: Text(gear.gearName),
-                    subtitle: Text('${gear.manufacturer} | ${gear.type}'),
-                    trailing: Text('${gear.weight}g'),
-                  );
-                },
-              );
-            },
-          ),
-        ),
       ],
     );
   }
