@@ -6,6 +6,7 @@ import 'addGear.dart';
 import 'editGear.dart';
 import 'myCamp.dart';
 import 'stat.dart';
+import 'gearDoctor.dart';
 import 'campMap.dart';
 
 import 'models/gear_model.dart';
@@ -33,6 +34,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const GearListPage(),
         '/add_gear': (context) => const AddGearPage(),
         '/my_camp': (context) => const MyCampPage(),
+        '/gear_doctor': (context) => const GearDoctorPage(),
         '/camp_map': (context) => CampMapPage(),
       },
       onGenerateRoute: (settings) {
