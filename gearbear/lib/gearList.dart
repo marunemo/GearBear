@@ -323,6 +323,13 @@ class _GearListPageState extends State<GearListPage> {
                           _toggleDrawer();
                         },
                       ),
+                      ListTile(
+                        title: const Text('Camp Map'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/camp_map');
+                          _toggleDrawer();
+                        },
+                      ),
                     ],
                   ),
                 ),
