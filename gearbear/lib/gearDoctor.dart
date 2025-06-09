@@ -4,16 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 
 import 'firebase/firebase_options.dart';
 import 'models/gear_model.dart';
 
-final List<String> categories = [
-  'Tent', 'Sleeping Bag', 'Matt', 'BackPack', 'Cook Set',
-  'Clothes', 'Electonics', 'etc'
-];
-
-// SearchedItem 클래스는 기존과 동일합니다.
 class SearchedItem {
   final String gearName;
   final String manufacturer;
@@ -40,25 +35,74 @@ class SearchedItem {
   }
 }
 
+Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
+  final apiKey = 'AIzaSyB5euO_bgCm-DXABEn1WMKHiHrU-1U2tJo';
+  final cx = '004e3e712339d45f3';
+  final url = 'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=$query';
+
+  final response = await http.get(Uri.parse(url));
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    // 대표 검색 결과 1~3개만 추출
+    final items = data['items'] as List<dynamic>?;
+    if (items != null && items.isNotEmpty) {
+      return {
+        'results': items.take(3).map((item) => {
+          'title': item['title'],
+          'link': item['link'],
+          'snippet': item['snippet'],
+        }).toList(),
+      };
+    } else {
+      return {'results': []};
+    }
+  } else {
+    return {'error': '검색 실패: ${response.statusCode}'};
+  }
+}
+
 // GeminiService 수정: Google 검색 Tool 적용
 class GeminiService {
   final GenerativeModel _model;
+  final FunctionDeclaration fetchCampToolByGoogleSearchTool;
 
   GeminiService()
-      // 모델 초기화 시 tools 파라미터에 GoogleSearch()를 추가합니다.
-      : _model = FirebaseAI.googleAI().generativeModel(
-          model: 'gemini-2.0-flash', // Google Search Tool과 호환되는 모델 사용
-          // tools: [Tool.googleSearch()], // <<< Google 검색 Tool 활성화
+      : fetchCampToolByGoogleSearchTool = FunctionDeclaration(
+          'fetchCampToolByGoogleSearch',
+          '구글 검색을 통해 캠프 도구 정보를 실시간으로 조회합니다.',
+          parameters: {
+            'query': Schema.string(
+              description: '검색할 캠프 도구 이름 또는 관련 키워드 (예: 캠프 랜턴 추천)'
+            ),
+          },
+        ),
+        _model = FirebaseAI.googleAI().generativeModel(
+          model: 'gemini-2.0-flash',
+          tools: [
+            Tool.functionDeclarations([
+              FunctionDeclaration(
+                'fetchCampToolByGoogleSearch',
+                '구글 검색을 통해 캠프 도구 정보를 실시간으로 조회합니다.',
+                parameters: {
+                  'query': Schema.string(
+                    description: '검색할 캠프 도구 이름 또는 관련 키워드 (예: 캠프 랜턴 추천)'
+                  ),
+                },
+              ),
+            ]),
+          ],
           generationConfig: GenerationConfig(
             temperature: 0.3,
-            responseMimeType: 'application/json',
+            // responseMimeType: 'application/json',
           ),
         );
 
-  final _categories = const ['Tent', 'Sleeping Bag', 'Matt', 'BackPack', 'Cook Set', 'Clothes', 'Electonics', 'etc'];
+  final _categories = const [
+    'Tent', 'Sleeping Bag', 'Matt', 'BackPack', 'Cook Set',
+    'Clothes', 'Electonics', 'etc'
+  ];
 
   Future<List<SearchedItem>> searchCampingGear(String query) async {
-    // 시스템 프롬프트 수정: 검색 Tool 사용을 명시적으로 지시
     final systemPrompt =
       'You are a helpful camping gear shopping assistant with access to Google Search. '
       'Use your search tool to find real, currently available camping gear based on the user\'s query. '
@@ -66,22 +110,48 @@ class GeminiService {
       'Provide the result as a JSON array where each object has "gearName", "manufacturer", "type", "weight" (in grams, integer), and "imgUrl". '
       'Only respond with the JSON array.';
 
-    final content = [
-      Content.text(systemPrompt),
-      Content.text('Search query: "$query"'),
-    ];
-    final response = await _model.generateContent(content);
-    final jsonString = response.text;
+    final chat = _model.startChat();
+
+    // 1. 사용자 프롬프트 전달
+    var response = await chat.sendMessage(Content.text('$systemPrompt\nSearch query: "$query"'));
+
+    // 2. 함수 호출이 필요한지 확인
+    final functionCalls = response.functionCalls.toList();
+    if (functionCalls.isNotEmpty) {
+      final functionCall = functionCalls.first;
+      if (functionCall.name == 'fetchCampToolByGoogleSearch') {
+        final searchQuery = functionCall.args['query'] as String;
+        // 3. 실제 구글 검색 함수 호출
+        final functionResult = await fetchCampToolByGoogleSearch(searchQuery);
+        // 4. 함수 결과를 모델에 전달
+        response = await chat.sendMessage(
+          Content.functionResponse(functionCall.name, functionResult)
+        );
+      }
+    }
+
+    String extractPureJson(String? responseText) {
+      if(responseText == null) return "";
+      
+      // ```json ... `````` ... ``` 지우기
+      final regex = RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```');
+      final match = regex.firstMatch(responseText);
+      if (match != null) {
+        return match.group(1)!.trim();
+      }
+      return responseText.trim();
+    }
+
+    // 5. AI의 최종 응답(JSON) 파싱
+    final jsonString = extractPureJson(response.text);
 
     if (jsonString == null || jsonString.isEmpty) return [];
-    
     final List<dynamic> jsonList = jsonDecode(jsonString);
     return jsonList.map((json) => SearchedItem.fromJson(json)).toList();
   }
 }
 
 
-// --- 메인 앱 및 화면 위젯 ---
 class GearDoctorPage extends StatelessWidget {
   const GearDoctorPage({super.key});
 
@@ -118,7 +188,6 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
   List<SearchedItem> _searchResults = [];
   String? _errorMessage;
 
-  // _performSearch 함수는 기존과 동일하게 유지됩니다.
   Future<void> _performSearch(String query) async {
     if (query.isEmpty) {
       setState(() {
@@ -159,7 +228,7 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
     final gid = docRef.id;
 
     final newGear = Gear(
-      uid: uid,     // 예시 사용자 ID
+      uid: uid,     //  사용자 UID
       gid: gid,     // Firestore 문서 ID를 장비의 고유 ID로 사용
       gearName: item.gearName,
       manufacturer: item.manufacturer,
@@ -193,12 +262,10 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
     super.dispose();
   }
 
-  // build 메서드 수정: UI 로직 변경
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // --- 검색창 UI 변경 ---
         Padding(
           padding: const EdgeInsets.all(16.0),
           // TextField와 검색 버튼으로 구성
