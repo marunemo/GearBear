@@ -316,23 +316,103 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
               itemBuilder: (context, index) {
                 final item = _searchResults[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: ListTile(
-                    leading: item.imgUrl != null && item.imgUrl.isNotEmpty
-                        ? Image.network(
-                            item.imgUrl,
-                            width: 30,
-                            height: 30,
-                            fit: BoxFit.cover,
-                          )
-                        : const Icon(Icons.image_not_supported),
-                    title: Text(item.gearName),
-                    subtitle: Text('${item.manufacturer} / ${item.type} / ${item.weight}g'),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    leading: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child:
+                          item.imgUrl.isNotEmpty
+                              ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  item.imgUrl,
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          size: 32,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                ),
+                              )
+                              : Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  size: 32,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                    ),
+                    title: Text(
+                      item.gearName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.manufacturer,
+                            style: TextStyle(
+                              color: Colors.blueGrey[700],
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.category,
+                                size: 16,
+                                color: Colors.blueGrey[400],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                item.type,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.scale,
+                                size: 16,
+                                color: Colors.blueGrey[400],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${item.weight}g',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                     trailing: ElevatedButton(
-                      child: const Text('추가'),
+                      child: const Text('Add'),
                       onPressed: () => _addGearToFirestore(item),
                     ),
-                  ),
+                  )
                 );
               },
             ),
