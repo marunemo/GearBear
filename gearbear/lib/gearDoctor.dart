@@ -33,10 +33,26 @@ class SearchedItem {
       imgUrl: json['imgUrl'] ?? '',
     );
   }
+
+  SearchedItem copyWith({
+    String? gearName,
+    String? manufacturer,
+    String? type,
+    int? weight,
+    String? imgUrl
+  }) {
+    return SearchedItem(
+      gearName: gearName ?? this.gearName,
+      manufacturer: manufacturer ?? this.manufacturer,
+      type: type ?? this.type,
+      weight: weight ?? this.weight,
+      imgUrl: imgUrl ?? this.imgUrl
+    );
+  }
 }
 
 Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
-  final apiKey = 'AIzaSyB5euO_bgCm-DXABEn1WMKHiHrU-1U2tJo';
+  final apiKey = 'AIzaSyBFWHEO9vKjjolb0Ot_dRtejKsSp7uNzmM';
   final cx = '004e3e712339d45f3';
   final url = 'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=$query';
 
@@ -59,6 +75,22 @@ Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
   } else {
     return {'error': '검색 실패: ${response.statusCode}'};
   }
+}
+
+Future<String?> gearNameImageSearch(String gearName) async {
+  final apiKey = 'AIzaSyBFWHEO9vKjjolb0Ot_dRtejKsSp7uNzmM';
+  final cx = '004e3e712339d45f3';
+  final url = Uri.parse('https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent(gearName)}&searchType=image');
+
+  final res = await http.get(url);
+  if (res.statusCode == 200) {
+    final data = json.decode(res.body);
+    final items = data['items'] as List<dynamic>?;
+    if (items != null && items.isNotEmpty) {
+      return items.first['link']; // 이미지 링크 반환
+    }
+  }
+  return null; // 실패 시 null
 }
 
 // GeminiService 수정: Google 검색 Tool 적용
@@ -107,7 +139,7 @@ class GeminiService {
       'You are a helpful camping gear shopping assistant with access to Google Search. '
       'Use your search tool to find real, currently available camping gear based on the user\'s query. '
       'The "type" of gear must be one of the following categories: ${_categories.join(', ')}. '
-      'Provide the result as a JSON array where each object has "gearName", "manufacturer", "type", "weight" (in grams, integer), and "imgUrl". '
+      'Provide the result as a JSON array where each object has "gearName", "manufacturer", "type", "weight" (in grams, integer), and imgUrl. '
       'Only respond with the JSON array.';
 
     final chat = _model.startChat();
@@ -145,9 +177,38 @@ class GeminiService {
     // 5. AI의 최종 응답(JSON) 파싱
     final jsonString = extractPureJson(response.text);
 
-    if (jsonString == null || jsonString.isEmpty) return [];
+    if (jsonString.isEmpty) return [];
+
     final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList.map((json) => SearchedItem.fromJson(json)).toList();
+    final List<Future<SearchedItem>> futures = jsonList.map((json) async {
+      final item = SearchedItem.fromJson(json);
+
+      String name = item.gearName;
+      final manufacturer = RegExp.escape(item.manufacturer);
+      final type = RegExp.escape(item.type);
+      final imgUrl = await gearNameImageSearch(name);
+
+      // 정규식 패턴 구성 및 앞뒤 공백 제거
+      if (manufacturer.isNotEmpty) {
+        name = name.replaceAll(
+          RegExp(r'^\s*' + manufacturer + r'\s*', caseSensitive: false),
+          '',
+        );
+      }
+      if (type.isNotEmpty) {
+        name = name.replaceAll(
+          RegExp(r'\s*' + type + r'\s*$', caseSensitive: false),
+          '',
+        );
+      }
+      name = name.trim();
+
+      return item.copyWith(gearName: name, imgUrl: imgUrl);
+    }).toList();
+
+    // 결과 리스트를 기다림
+    final List<SearchedItem> results = await Future.wait(futures);
+    return results;
   }
 }
 
@@ -316,23 +377,103 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
               itemBuilder: (context, index) {
                 final item = _searchResults[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: ListTile(
-                    leading: item.imgUrl != null && item.imgUrl.isNotEmpty
-                        ? Image.network(
-                            item.imgUrl,
-                            width: 30,
-                            height: 30,
-                            fit: BoxFit.cover,
-                          )
-                        : const Icon(Icons.image_not_supported),
-                    title: Text(item.gearName),
-                    subtitle: Text('${item.manufacturer} / ${item.type} / ${item.weight}g'),
-                    trailing: ElevatedButton(
-                      child: const Text('추가'),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    leading: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child:
+                          item.imgUrl.isNotEmpty
+                              ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  item.imgUrl,
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          size: 32,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                ),
+                              )
+                              : Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  size: 32,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                    ),
+                    title: Text(
+                      item.gearName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.manufacturer,
+                            style: TextStyle(
+                              color: Colors.blueGrey[700],
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.category,
+                                size: 16,
+                                color: Colors.blueGrey[400],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                item.type,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.scale,
+                                size: 16,
+                                color: Colors.blueGrey[400],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${item.weight}g',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    trailing: FloatingActionButton(
+                      child: const Text('Add'),
                       onPressed: () => _addGearToFirestore(item),
                     ),
-                  ),
+                  )
                 );
               },
             ),
