@@ -33,6 +33,22 @@ class SearchedItem {
       imgUrl: json['imgUrl'] ?? '',
     );
   }
+
+  SearchedItem copyWith({
+    String? gearName,
+    String? manufacturer,
+    String? type,
+    int? weight,
+    String? imgUrl
+  }) {
+    return SearchedItem(
+      gearName: gearName ?? this.gearName,
+      manufacturer: manufacturer ?? this.manufacturer,
+      type: type ?? this.type,
+      weight: weight ?? this.weight,
+      imgUrl: imgUrl ?? this.imgUrl
+    );
+  }
 }
 
 Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
@@ -145,9 +161,29 @@ class GeminiService {
     // 5. AI의 최종 응답(JSON) 파싱
     final jsonString = extractPureJson(response.text);
 
-    if (jsonString == null || jsonString.isEmpty) return [];
+    if (jsonString.isEmpty) return [];
+
     final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList.map((json) => SearchedItem.fromJson(json)).toList();
+    return jsonList.map((json) {
+      final item = SearchedItem.fromJson(json);
+
+      String name = item.gearName;
+      final manufacturer = RegExp.escape(item.manufacturer);
+      final type = RegExp.escape(item.type);
+
+      // 정규식 패턴 구성: 앞뒤 공백을 고려해 제거
+      if (manufacturer.isNotEmpty) {
+        name = name.replaceAll(RegExp(r'^\s*' + manufacturer + r'\s*', caseSensitive: false), '');
+      }
+
+      if (type.isNotEmpty) {
+        name = name.replaceAll(RegExp(r'\s*' + type + r'\s*$', caseSensitive: false), '');
+      }
+
+      name = name.trim(); // 앞뒤 공백 제거
+
+      return item.copyWith(gearName: name);
+    }).toList();
   }
 }
 
@@ -408,7 +444,7 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
                         ],
                       ),
                     ),
-                    trailing: ElevatedButton(
+                    trailing: FloatingActionButton(
                       child: const Text('Add'),
                       onPressed: () => _addGearToFirestore(item),
                     ),
