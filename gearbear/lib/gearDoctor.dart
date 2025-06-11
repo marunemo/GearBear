@@ -5,6 +5,7 @@ import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'firebase/firebase_options.dart';
 import 'models/gear_model.dart';
@@ -52,8 +53,8 @@ class SearchedItem {
 }
 
 Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
-  final apiKey = 'AIzaSyBFWHEO9vKjjolb0Ot_dRtejKsSp7uNzmM';
-  final cx = '004e3e712339d45f3';
+  final apiKey = dotenv.env['GOOGLE_API_KEY'];
+  final cx = dotenv.env['CUSTOM_SEARCH_ENGINE_ID'];
   final url = 'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=$query';
 
   final response = await http.get(Uri.parse(url));
@@ -78,8 +79,8 @@ Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
 }
 
 Future<String?> gearNameImageSearch(String gearName) async {
-  final apiKey = 'AIzaSyBFWHEO9vKjjolb0Ot_dRtejKsSp7uNzmM';
-  final cx = '004e3e712339d45f3';
+  final apiKey = dotenv.env['GOOGLE_API_KEY'];
+  final cx = dotenv.env['CUSTOM_SEARCH_ENGINE_ID'];
   final url = Uri.parse('https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent(gearName)}&searchType=image');
 
   final res = await http.get(url);
