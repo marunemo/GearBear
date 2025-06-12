@@ -50,6 +50,7 @@ dependencies:
   firebase_ai: ^2.0.0
   http: ^1.4.0
   dotenv: ^4.2.0
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
