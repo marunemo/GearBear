@@ -337,6 +337,27 @@ class _MyCampPageState extends State<MyCampPage> {
                         title: const Text('My Camp'),
                         onTap: _toggleDrawer,
                       ),
+                      ListTile(
+                        title: const Text('Camp Map'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/camp_map');
+                          _toggleDrawer();
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('Gear Doctor'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/gear_doctor');
+                          _toggleDrawer();
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('My Chat'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/my_chat');
+                          _toggleDrawer();
+                        },
+                      ),
                     ],
                   ),
                 ),

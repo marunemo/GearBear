@@ -336,7 +336,14 @@ class _GearListPageState extends State<GearListPage> {
                           Navigator.pushNamed(context, '/gear_doctor');
                           _toggleDrawer();
                         }
-                      )
+                      ),
+                      ListTile(
+                        title: const Text('My Chat'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/my_chat');
+                          _toggleDrawer();
+                        },
+                      ),
                     ],
                   ),
                 ),

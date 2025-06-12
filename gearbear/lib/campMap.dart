@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
 import 'models/camp_site.dart';
+import 'makeRSVP.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 import 'package:geolocator/geolocator.dart';
@@ -80,8 +80,13 @@ class _CampMapPageState extends State<CampMapPage> {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    // RSVP 기능(추후 구현)
-                    Navigator.pop(context);
+                    Navigator.pop(context); // 모달 닫기
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MakeRSVPPage(campSite: camp),
+                      ),
+                    );
                   },
                   child: Text('RSVP'),
                 ),
