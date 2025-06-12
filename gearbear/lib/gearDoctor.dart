@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:async'; // Completer를 위해 필요
 
 import 'firebase/firebase_options.dart';
 import 'models/gear_model.dart';
@@ -78,20 +79,103 @@ Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
   }
 }
 
+// 주어진 URL의 이미지를 Image.network가 로드할 수 있는지 테스트하는 헬퍼 함수
+Future<bool> _isImageLoadable(String imageUrl) async {
+  try {
+    final response = await http.get(
+      Uri.parse(imageUrl),
+      headers: {
+        'Range': 'bytes=0-1023', // 처음 1KB만 요청
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36',
+      },
+    ).timeout(const Duration(seconds: 7));
+
+    // 상태코드는 206 (Partial Content) 혹은 200일 수 있음
+    if (response.statusCode == 200 || response.statusCode == 206) {
+      final contentType = response.headers['content-type'] ?? '';
+
+      // image/* 타입이면서 svg는 제외
+      if (contentType.startsWith('image/') && !contentType.contains('svg')) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+bool _isSupportedImageExtension(String url) {
+  final lowerCaseUrl = url.toLowerCase();
+  // Image.network가 일반적으로 지원하는 확장자
+  return lowerCaseUrl.endsWith('.jpg') ||
+         lowerCaseUrl.endsWith('.jpeg') ||
+         lowerCaseUrl.endsWith('.png') ||
+         lowerCaseUrl.endsWith('.gif') ||
+         lowerCaseUrl.endsWith('.webp');
+}
+
+// Google Custom Search API의 'fileFormat' 정보 활용
+// 예: "image/jpeg", "image/png", "image/gif", "image/svg+xml" 등
+bool _isSupportedFileFormat(String? fileFormat) {
+  if (fileFormat == null) return false;
+  final lowerCaseFormat = fileFormat.toLowerCase();
+  // SVG는 Image.network로 바로 로드되지 않으므로 제외하거나 별도 처리 필요
+  return lowerCaseFormat.startsWith('image/') && !lowerCaseFormat.contains('svg');
+}
+
 Future<String?> gearNameImageSearch(String gearName) async {
   final apiKey = dotenv.env['GOOGLE_API_KEY'];
   final cx = dotenv.env['CUSTOM_SEARCH_ENGINE_ID'];
-  final url = Uri.parse('https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent(gearName)}&searchType=image');
+  final query = '$gearName site:rei.com OR site:backcountry.com';
 
-  final res = await http.get(url);
-  if (res.statusCode == 200) {
-    final data = json.decode(res.body);
-    final items = data['items'] as List<dynamic>?;
-    if (items != null && items.isNotEmpty) {
-      return items.first['link']; // 이미지 링크 반환
-    }
+  if (apiKey == null || cx == null) {
+    print('Error: GOOGLE_API_KEY or CUSTOM_SEARCH_ENGINE_ID is not set in .env');
+    return null;
   }
-  return null; // 실패 시 null
+
+  final url = Uri.parse(
+    'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent(query)}&searchType=image',
+  );
+
+  try {
+    final res = await http.get(url);
+
+    if (res.statusCode == 200) {
+      final data = json.decode(res.body);
+      final items = data['items'] as List<dynamic>?;
+
+      if (items != null && items.isNotEmpty) {
+        for (var item in items) {
+          final imageUrl = item['link'] as String?;
+          final imageInfo = item['image'] as Map<String, dynamic>?;
+
+          if (imageUrl != null && imageInfo != null) {
+            final int? width = imageInfo['width'];
+            final int? height = imageInfo['height'];
+            final String? fileFormat = imageInfo['fileFormat'];
+
+            if (width != null && height != null && width > 0 && height > 0 &&
+                _isSupportedImageExtension(imageUrl) &&
+                _isSupportedFileFormat(fileFormat)) {
+              
+              final loadable = await _isImageLoadable(imageUrl);
+              if (loadable) {
+                return imageUrl; // ✅ 바로 반환
+              }
+            }
+          }
+        }
+      }
+    } else {
+      print('Google Custom Search API error: ${res.statusCode} - ${res.body}');
+    }
+  } catch (e) {
+    print('Error during image search: $e');
+  }
+
+  return null; // 로드 가능한 이미지를 찾지 못했거나 오류 발생
 }
 
 // GeminiService 수정: Google 검색 Tool 적용
