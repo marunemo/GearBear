@@ -192,30 +192,30 @@ class _GearListPageState extends State<GearListPage> {
                                 horizontal: 16,
                               ),
                               leading: SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: gear.imgUrl.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(
-                                      gear.imgUrl,
-                                      width: 56,
-                                      height: 56,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => 
-                                        Container(
-                                          color: Colors.grey[200],
-                                          child: const Icon(Icons.image_not_supported, size: 32, color: Colors.grey),
+                                width: 56,
+                                height: 56,
+                                child: gear.imgUrl.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.network(
+                                          gear.imgUrl,
+                                          width: 56,
+                                          height: 56,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => 
+                                            Container(
+                                              color: Colors.grey[200],
+                                              child: const Icon(Icons.image_not_supported, size: 32, color: Colors.grey),
+                                            ),
                                         ),
-                                    ),
-                                  )
-                                : Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(Icons.image_not_supported, size: 32, color: Colors.grey),
-                                  ),
+                                      )
+                                    : Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(Icons.image_not_supported, size: 32, color: Colors.grey),
+                                      ),
                               ),
                               title: Text(
                                 gear.gearName,
