@@ -103,7 +103,6 @@ class _AddGearPageState extends State<AddGearPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 이미지 업로드 영역
                 Center(
                   child: GestureDetector(
                     onTap: _pickImage,
@@ -134,7 +133,6 @@ class _AddGearPageState extends State<AddGearPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // 제조사 입력 필드
                 const Text('Manufacturer', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -154,7 +152,6 @@ class _AddGearPageState extends State<AddGearPage> {
                 ),
                 const SizedBox(height: 16),
                 
-                // 이름 입력 필드
                 const Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -178,7 +175,6 @@ class _AddGearPageState extends State<AddGearPage> {
                 ),
                 const SizedBox(height: 16),
                 
-                // 유형 선택 드롭다운
                 const Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Container(
@@ -215,7 +211,6 @@ class _AddGearPageState extends State<AddGearPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // 무게 입력 필드
                 const Text('Weight', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextFormField(

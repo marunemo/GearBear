@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import '../chatRoom.dart';
 
 class MakeRSVPPage extends StatefulWidget {
-  final CampSite campSite; // 캠핑장 정보(이름, 위도, 경도 등)
+  final CampSite campSite; 
 
   const MakeRSVPPage({Key? key, required this.campSite}) : super(key: key);
 
@@ -37,7 +37,6 @@ class _MakeRSVPPageState extends State<MakeRSVPPage> {
             return Center(child: CircularProgressIndicator());
           }
           final docs = snapshot.data!.docs;
-          // 위/경도가 일치하는 방만 필터링
           final filteredDocs = docs.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
             return (data['latitude'] == latitude && data['longitude'] == longitude);
@@ -141,7 +140,6 @@ class _MakeRSVPPageState extends State<MakeRSVPPage> {
                         if (roomName.isEmpty || selectedDate == null) return;
                         final user = FirebaseAuth.instance.currentUser;
                         if (user == null) return;
-                        // 방 생성
                         await FirebaseFirestore.instance
                             .collection('chat_room')
                             .add({

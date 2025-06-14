@@ -1,14 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatRoom {
-  final String id;        // Firestore 문서 ID
-  final String name;      // 채팅방 이름
-  final DateTime date;    // 캠핑 예정 날짜
-  final String ownerUid;  // 방장 UID
+  final String id;      
+  final String name;  
+  final DateTime date;   
+  final String ownerUid;  
   final DateTime createdAt;
-  final double latitude;  // 캠핑장 위도
-  final double longitude; // 캠핑장 경도
-  final List<String> participants; // 참가자 UID 리스트
+  final double latitude; 
+  final double longitude; 
+  final List<String> participants;
 
   ChatRoom({
     required this.id,

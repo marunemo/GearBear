@@ -22,12 +22,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> signInWithGoogle() async {
-    // Google 로그인 창 표시
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-    if (googleUser == null) return; // 로그인 취소 시
+    if (googleUser == null) return;
 
-    // 인증 정보 획득
     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
     final credential = GoogleAuthProvider.credential(
@@ -35,10 +33,8 @@ class _LoginPageState extends State<LoginPage> {
       idToken: googleAuth.idToken,
     );
 
-    // Firebase에 로그인
     await FirebaseAuth.instance.signInWithCredential(credential);
 
-    // 화면이 도중에 바뀌었는지 확인
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/');
   }
@@ -59,7 +55,6 @@ gotoMenu() {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 로고 이미지
                 Image.asset(
                   'assets/images/GearBear.png',
                   width: 160,
@@ -67,7 +62,6 @@ gotoMenu() {
                 ),
                 const SizedBox(height: 10),
                 
-                // 앱 이름
                 const Text(
                   'GearBear',
                   style: TextStyle(
@@ -77,7 +71,6 @@ gotoMenu() {
                 ),
                 const SizedBox(height: 35),
                 
-                // 구글 로그인
                 GoogleSignInButton(onPressed: signInWithGoogle),
               ],
             ),

@@ -42,10 +42,8 @@ class _GearListPageState extends State<GearListPage> {
   Future<void> signOut() async {
     final GoogleSignIn googleSignIn = GoogleSignIn();
 
-    // Google 로그아웃
     await googleSignIn.signOut();
 
-    // Firebase 로그아웃
     await FirebaseAuth.instance.signOut();
   }
 
@@ -70,7 +68,6 @@ class _GearListPageState extends State<GearListPage> {
             onPressed: () async {
               await signOut();
 
-              // 로그아웃 후 로그인 페이지로 이동 (예: LoginPage)
               Navigator.pushReplacementNamed(context, '/login');
             },
           ),
@@ -86,7 +83,6 @@ class _GearListPageState extends State<GearListPage> {
       ),
       body: Stack(
         children: [
-          // Main content
           Column(
             children: [
               Padding(
@@ -294,7 +290,6 @@ class _GearListPageState extends State<GearListPage> {
             ],
           ),
 
-          // Floating drawer
           if (_isDrawerOpen)
             Positioned(
               top: 0,
@@ -312,7 +307,6 @@ class _GearListPageState extends State<GearListPage> {
                       ListTile(
                         title: const Text('Gear List'),
                         onTap: () {
-                          // TODO: Navigate to Gear List
                           _toggleDrawer();
                         },
                       ),

@@ -10,7 +10,6 @@ Future<List<CampSite>> loadCampSites() async {
     shouldParseNumbers: false,
   ).convert(csvString);
 
-  // 첫 행(헤더)은 건너뛰고, 캠핑장 리스트 생성
   return rows.skip(1).map((row) {
     final name = row[0] as String;
     final lat = double.tryParse(row[11].toString()) ?? 0.0;

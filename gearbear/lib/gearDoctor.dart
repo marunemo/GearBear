@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:async'; // Completer를 위해 필요
+import 'dart:async';
 
 import 'firebase/firebase_options.dart';
 import 'models/gear_model.dart';
@@ -32,7 +32,7 @@ class SearchedItem {
       manufacturer: json['manufacturer'] ?? 'N/A',
       type: json['type'] ?? 'etc',
       weight: (json['weight'] as num?)?.toInt() ?? 0,
-      imgUrl: '', // LLM imgUrl은 무시!
+      imgUrl: '', 
     );
   }
 
@@ -81,26 +81,23 @@ Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
   await fetchFromSite('backcountry.com');
 
   return {
-    'results': results.take(10).toList(), // 총 10개까지만 반환
+    'results': results.take(10).toList(),
   };
 }
 
-// 주어진 URL의 이미지를 Image.network가 로드할 수 있는지 테스트하는 헬퍼 함수
 Future<bool> _isImageLoadable(String imageUrl) async {
   try {
     final response = await http.get(
       Uri.parse(imageUrl),
       headers: {
-        'Range': 'bytes=0-1023', // 처음 1KB만 요청
+        'Range': 'bytes=0-1023',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36',
       },
     ).timeout(const Duration(seconds: 7));
 
-    // 상태코드는 206 (Partial Content) 혹은 200일 수 있음
     if (response.statusCode == 200 || response.statusCode == 206) {
       final contentType = response.headers['content-type'] ?? '';
 
-      // image/* 타입이면서 svg는 제외
       if (contentType.startsWith('image/') && !contentType.contains('svg')) {
         return true;
       }
@@ -114,7 +111,6 @@ Future<bool> _isImageLoadable(String imageUrl) async {
 
 bool _isSupportedImageExtension(String url) {
   final lowerCaseUrl = url.toLowerCase();
-  // Image.network가 일반적으로 지원하는 확장자
   return lowerCaseUrl.endsWith('.jpg') ||
          lowerCaseUrl.endsWith('.jpeg') ||
          lowerCaseUrl.endsWith('.png') ||
@@ -122,12 +118,9 @@ bool _isSupportedImageExtension(String url) {
          lowerCaseUrl.endsWith('.webp');
 }
 
-// Google Custom Search API의 'fileFormat' 정보 활용
-// 예: "image/jpeg", "image/png", "image/gif", "image/svg+xml" 등
 bool _isSupportedFileFormat(String? fileFormat) {
   if (fileFormat == null) return false;
   final lowerCaseFormat = fileFormat.toLowerCase();
-  // SVG는 Image.network로 바로 로드되지 않으므로 제외하거나 별도 처리 필요
   return lowerCaseFormat.startsWith('image/') && !lowerCaseFormat.contains('svg');
 }
 
@@ -166,11 +159,9 @@ Future<String?> gearNameImageSearch(SearchedItem item) async {
     return null;
   }
 
-  // backcountry.com 우선 → rei.com 순서로 시도
   return await searchFromSite('backcountry.com') ?? await searchFromSite('rei.com');
 }
 
-// GeminiService 수정: Google 검색 Tool 적용
 class GeminiService {
   final GenerativeModel _model;
   final FunctionDeclaration fetchCampToolByGoogleSearchTool;
@@ -202,7 +193,6 @@ class GeminiService {
           ],
           generationConfig: GenerationConfig(
             temperature: 0.3,
-            // responseMimeType: 'application/json',
           ),
         );
 
@@ -223,18 +213,14 @@ class GeminiService {
 
     final chat = _model.startChat();
 
-    // 1. 사용자 프롬프트 전달
     var response = await chat.sendMessage(Content.text('$systemPrompt\nSearch query: "$query"'));
 
-    // 2. 함수 호출이 필요한지 확인
     final functionCalls = response.functionCalls.toList();
     if (functionCalls.isNotEmpty) {
       final functionCall = functionCalls.first;
       if (functionCall.name == 'fetchCampToolByGoogleSearch') {
         final searchQuery = functionCall.args['query'] as String;
-        // 3. 실제 구글 검색 함수 호출
         final functionResult = await fetchCampToolByGoogleSearch(searchQuery);
-        // 4. 함수 결과를 모델에 전달
         response = await chat.sendMessage(
           Content.functionResponse(functionCall.name, functionResult)
         );
@@ -244,7 +230,6 @@ class GeminiService {
     String extractPureJson(String? responseText) {
       if(responseText == null) return "";
       
-      // ```json ... `````` ... ``` 지우기
       final regex = RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```');
       final match = regex.firstMatch(responseText);
       if (match != null) {
@@ -253,7 +238,6 @@ class GeminiService {
       return responseText.trim();
     }
 
-    // 5. AI의 최종 응답(JSON) 파싱
     final jsonString = extractPureJson(response.text);
     debugPrint(jsonString);
 
@@ -268,7 +252,6 @@ class GeminiService {
       final imgUrl = await gearNameImageSearch(item);
       debugPrint(imgUrl);
 
-      // 정규식 패턴 구성 및 앞뒤 공백 제거
       if (manufacturer.isNotEmpty) {
         name = name.replaceAll(
           RegExp(r'^\s*' + manufacturer + r'\s*', caseSensitive: false),
@@ -283,11 +266,9 @@ class GeminiService {
       }
       name = name.trim();
 
-      // imgUrl은 오직 gearNameImageSearch에서 받아온 값만 사용
       return item.copyWith(gearName: name, imgUrl: imgUrl);
     }).toList();
 
-    // 결과 리스트를 기다림
     final List<SearchedItem> results = await Future.wait(futures);
     return results;
   }
@@ -307,13 +288,11 @@ class GearDoctorPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      // 핵심 로직을 담고 있는 StatefulWidget을 body에 배치
       body: const GearFinderWidget(),
     );
   }
 }
 
-// --- 상태 관리 없는 핵심 로직 위젯 ---
 class GearFinderWidget extends StatefulWidget {
   const GearFinderWidget({super.key});
 
@@ -321,10 +300,8 @@ class GearFinderWidget extends StatefulWidget {
   State<GearFinderWidget> createState() => _GearFinderWidgetState();
 }
 
-// GearFinderWidget의 State 클래스
 class _GearFinderWidgetState extends State<GearFinderWidget> {
   final GeminiService _geminiService = GeminiService();
-  // SearchController 대신 TextEditingController 사용
   final TextEditingController _searchController = TextEditingController(); 
   
   bool _isLoading = false;
@@ -355,13 +332,12 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
     } catch (e) {
       setState(() {
         _errorMessage = "Error in search: $e";
-        _searchResults = []; // 오류 발생 시 이전 결과 초기화
+        _searchResults = [];
         _isLoading = false;
       });
     }
   }
 
-  // Firestore에 장비를 추가하는 함수
   Future<void> _addGearToFirestore(SearchedItem item) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -371,8 +347,8 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
     final gid = docRef.id;
 
     final newGear = Gear(
-      uid: uid,     //  사용자 UID
-      gid: gid,     // Firestore 문서 ID를 장비의 고유 ID로 사용
+      uid: uid, 
+      gid: gid, 
       gearName: item.gearName,
       manufacturer: item.manufacturer,
       type: item.type,
@@ -382,7 +358,6 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
     );
 
     try {
-      // Gear 객체를 Map으로 변환하여 Firestore에 저장
       await docRef.set(newGear.toMap());
       
       if (mounted) {
@@ -411,7 +386,6 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          // TextField와 검색 버튼으로 구성
           child: Row(
             children: [
               Expanded(
@@ -421,7 +395,6 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
                     hintText: 'Searching gear...',
                     border: OutlineInputBorder(),
                   ),
-                  // 키보드의 완료 버튼으로도 검색 실행
                   onSubmitted: (value) => _performSearch(value),
                 ),
               ),
@@ -440,17 +413,13 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
           ),
         ),
 
-        // --- 검색 결과 표시 UI ---
-        // 로딩 중일 때 인디케이터 표시
         if (_isLoading)
           const Expanded(child: Center(child: CircularProgressIndicator()))
-        // 에러 발생 시 메시지 표시
         else if (_errorMessage != null)
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
           )
-        // 검색 결과가 있을 때 리스트 표시
         else if (_searchResults.isNotEmpty)
           Expanded(
             child: ListView.builder(
@@ -559,7 +528,6 @@ class _GearFinderWidgetState extends State<GearFinderWidget> {
               },
             ),
           )
-        // 검색 결과가 없을 때 (초기 상태 포함)
         else
           const Expanded(
             child: Center(child: Text('Enter your search term and press the search button.')),

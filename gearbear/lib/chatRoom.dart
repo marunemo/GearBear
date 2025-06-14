@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'models/chat_room.dart'; // 채팅방 정보 (방 이름 등)
-import 'models/chat.dart';      // ChatMessage 모델
+import 'models/chat_room.dart';
+import 'models/chat.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatRoomPage extends StatefulWidget {
@@ -35,7 +35,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     });
 
     _controller.clear();
-    // 아래로 스크롤
     Future.delayed(Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);

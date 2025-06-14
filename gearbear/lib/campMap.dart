@@ -58,7 +58,7 @@ class _CampMapPageState extends State<CampMapPage> {
       markerId: MarkerId(camp.name),
       position: LatLng(camp.latitude, camp.longitude),
       infoWindow: InfoWindow(
-        title: '', // infoWindow 비활성화
+        title: '',
         snippet: '',
       ),
       onTap: () {
@@ -80,7 +80,7 @@ class _CampMapPageState extends State<CampMapPage> {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    Navigator.pop(context); // 모달 닫기
+                    Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(

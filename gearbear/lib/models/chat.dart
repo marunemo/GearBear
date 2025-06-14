@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatMessage {
-  final String id;            // Firestore 메시지 문서 ID
-  final String senderUid;     // 보낸 사용자 UID
-  final String senderName;    // 보낸 사용자 이름
-  final String message;       // 메시지 텍스트
-  final Timestamp timestamp;  // 메시지 전송 시간
+  final String id;        
+  final String senderUid;   
+  final String senderName;  
+  final String message;      
+  final Timestamp timestamp; 
 
   ChatMessage({
     required this.id,
