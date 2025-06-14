@@ -56,7 +56,7 @@ class SearchedItem {
 Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
   final apiKey = dotenv.env['GOOGLE_API_KEY'];
   final cx = dotenv.env['CUSTOM_SEARCH_ENGINE_ID'];
-  final url = 'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=$query';
+  final url = 'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent('$query site:rei.com OR site:backcountry.com')}';
 
   final response = await http.get(Uri.parse(url));
   if (response.statusCode == 200) {
