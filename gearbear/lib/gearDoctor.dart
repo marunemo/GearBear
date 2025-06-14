@@ -32,7 +32,7 @@ class SearchedItem {
       manufacturer: json['manufacturer'] ?? 'N/A',
       type: json['type'] ?? 'etc',
       weight: (json['weight'] as num?)?.toInt() ?? 0,
-      imgUrl: json['imgUrl'] ?? '',
+      imgUrl: '', // LLM imgUrl은 무시!
     );
   }
 
@@ -56,27 +56,33 @@ class SearchedItem {
 Future<Map<String, Object?>> fetchCampToolByGoogleSearch(String query) async {
   final apiKey = dotenv.env['GOOGLE_API_KEY'];
   final cx = dotenv.env['CUSTOM_SEARCH_ENGINE_ID'];
-  final url = 'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent('$query site:rei.com OR site:backcountry.com')}';
+  final results = <Map<String, dynamic>>[];
 
-  final response = await http.get(Uri.parse(url));
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    // 대표 검색 결과 10개만 추출
-    final items = data['items'] as List<dynamic>?;
-    if (items != null && items.isNotEmpty) {
-      return {
-        'results': items.take(10).map((item) => {
-          'title': item['title'],
-          'link': item['link'],
-          'snippet': item['snippet'],
-        }).toList(),
-      };
-    } else {
-      return {'results': []};
+  Future<void> fetchFromSite(String site) async {
+    final url =
+        'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent('$query site:$site')}';
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final items = data['items'] as List<dynamic>?;
+      if (items != null && items.isNotEmpty) {
+        results.addAll(
+          items.take(10).map((item) => {
+            'title': item['title'],
+            'link': item['link'],
+            'snippet': item['snippet'],
+          }),
+        );
+      }
     }
-  } else {
-    return {'error': '검색 실패: ${response.statusCode}'};
   }
+
+  await fetchFromSite('rei.com');
+  await fetchFromSite('backcountry.com');
+
+  return {
+    'results': results.take(10).toList(), // 총 10개까지만 반환
+  };
 }
 
 // 주어진 URL의 이미지를 Image.network가 로드할 수 있는지 테스트하는 헬퍼 함수
@@ -125,57 +131,43 @@ bool _isSupportedFileFormat(String? fileFormat) {
   return lowerCaseFormat.startsWith('image/') && !lowerCaseFormat.contains('svg');
 }
 
-Future<String?> gearNameImageSearch(String gearName) async {
+Future<String?> gearNameImageSearch(SearchedItem item) async {
   final apiKey = dotenv.env['GOOGLE_API_KEY'];
   final cx = dotenv.env['CUSTOM_SEARCH_ENGINE_ID'];
-  final query = '$gearName site:rei.com OR site:backcountry.com';
+  if (apiKey == null || cx == null) return null;
 
-  if (apiKey == null || cx == null) {
-    print('Error: GOOGLE_API_KEY or CUSTOM_SEARCH_ENGINE_ID is not set in .env');
-    return null;
-  }
+  Future<String?> searchFromSite(String site) async {
+    final query = '${item.manufacturer} ${item.gearName} ${item.type} site:$site';
+    final url = Uri.parse(
+      'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent(query)}&searchType=image',
+    );
+    try {
+      final res = await http.get(url);
 
-  final url = Uri.parse(
-    'https://www.googleapis.com/customsearch/v1?key=$apiKey&cx=$cx&q=${Uri.encodeQueryComponent(query)}&searchType=image',
-  );
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        final items = data['items'] as List<dynamic>?;
 
-  try {
-    final res = await http.get(url);
+        if (items != null && items.isNotEmpty) {
+          for (var item in items) {
+            final imageUrl = item['link'] as String?;
+            final imageInfo = item['image'] as Map<String, dynamic>?;
 
-    if (res.statusCode == 200) {
-      final data = json.decode(res.body);
-      final items = data['items'] as List<dynamic>?;
-
-      if (items != null && items.isNotEmpty) {
-        for (var item in items) {
-          final imageUrl = item['link'] as String?;
-          final imageInfo = item['image'] as Map<String, dynamic>?;
-
-          if (imageUrl != null && imageInfo != null) {
-            final int? width = imageInfo['width'];
-            final int? height = imageInfo['height'];
-            final String? fileFormat = imageInfo['fileFormat'];
-
-            if (width != null && height != null && width > 0 && height > 0 &&
-                _isSupportedImageExtension(imageUrl) &&
-                _isSupportedFileFormat(fileFormat)) {
-              
-              final loadable = await _isImageLoadable(imageUrl);
-              if (loadable) {
-                return imageUrl; // ✅ 바로 반환
-              }
+            if (imageUrl != null && imageInfo != null) {
+              return imageUrl;
             }
           }
         }
       }
-    } else {
-      print('Google Custom Search API error: ${res.statusCode} - ${res.body}');
+    } catch (e) {
+      print('Error during image search: $e');
     }
-  } catch (e) {
-    print('Error during image search: $e');
+    print(url);
+    return null;
   }
 
-  return null; // 로드 가능한 이미지를 찾지 못했거나 오류 발생
+  // backcountry.com 우선 → rei.com 순서로 시도
+  return await searchFromSite('backcountry.com') ?? await searchFromSite('rei.com');
 }
 
 // GeminiService 수정: Google 검색 Tool 적용
@@ -222,7 +214,9 @@ class GeminiService {
   Future<List<SearchedItem>> searchCampingGear(String query) async {
     final systemPrompt =
       'You are a helpful camping gear shopping assistant with access to Google Search. '
-      'Use your search tool to find real, currently available camping gear based on the user\'s query. '
+      'Use your search tool to find real, currently available camping gear based ONLY on information from backcountry.com and rei.com. '
+      'Primarily recommend products that are available on backcountry.com, and only recommend products from rei.com if suitable options are not available on backcountry.com. '
+      'For each recommended product, also provide a direct image URL from backcountry.com or rei.com if available. '
       'The "type" of gear must be one of the following categories: ${_categories.join(', ')}. '
       'Provide the result as a JSON array where each object has "gearName", "manufacturer", "type", "weight" (in grams, integer), and imgUrl. '
       'Only respond with the JSON array.';
@@ -261,17 +255,18 @@ class GeminiService {
 
     // 5. AI의 최종 응답(JSON) 파싱
     final jsonString = extractPureJson(response.text);
+    debugPrint(jsonString);
 
     if (jsonString.isEmpty) return [];
 
     final List<dynamic> jsonList = jsonDecode(jsonString);
     final List<Future<SearchedItem>> futures = jsonList.map((json) async {
       final item = SearchedItem.fromJson(json);
-
       String name = item.gearName;
       final manufacturer = RegExp.escape(item.manufacturer);
       final type = RegExp.escape(item.type);
-      final imgUrl = await gearNameImageSearch(name);
+      final imgUrl = await gearNameImageSearch(item);
+      debugPrint(imgUrl);
 
       // 정규식 패턴 구성 및 앞뒤 공백 제거
       if (manufacturer.isNotEmpty) {
@@ -288,6 +283,7 @@ class GeminiService {
       }
       name = name.trim();
 
+      // imgUrl은 오직 gearNameImageSearch에서 받아온 값만 사용
       return item.copyWith(gearName: name, imgUrl: imgUrl);
     }).toList();
 
