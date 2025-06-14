@@ -76,22 +76,6 @@ gotoMenu() {
             
             // 구글 로그인
             GoogleSignInButton(onPressed: signInWithGoogle),
-            
-            // 로그인 버튼
-            ElevatedButton(
-              onPressed: gotoMenu,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: const Text(
-                'Backdoor',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
           ],
         ),
       ),
