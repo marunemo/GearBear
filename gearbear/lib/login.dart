@@ -53,29 +53,34 @@ gotoMenu() {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 로고 이미지
-            Image.asset(
-              'assets/images/GearBear.png',
-              width: 160,
-              height: 160,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 로고 이미지
+                Image.asset(
+                  'assets/images/GearBear.png',
+                  width: 160,
+                  height: 160,
+                ),
+                const SizedBox(height: 10),
+                
+                // 앱 이름
+                const Text(
+                  'GearBear',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 35),
+                
+                // 구글 로그인
+                GoogleSignInButton(onPressed: signInWithGoogle),
+              ],
             ),
-            const SizedBox(height: 10),
-            
-            // 앱 이름
-            const Text(
-              'GearBear',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 35),
-            
-            // 구글 로그인
-            GoogleSignInButton(onPressed: signInWithGoogle),
           ],
         ),
       ),
